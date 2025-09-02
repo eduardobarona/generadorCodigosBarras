@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador de Códigos de Barras</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(45deg, #4f46e5, #7c3aed);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+
+    .form-section {
+      padding: 40px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #374151;
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: #f9fafb;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #4f46e5;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    button {
+      flex: 1;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-preview {
+      background: linear-gradient(45deg, #10b981, #059669);
+      color: white;
+    }
+
+    .btn-preview:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-download {
+      background: linear-gradient(45deg, #f59e0b, #d97706);
+      color: white;
+    }
+
+    .btn-download:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    #preview {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 2px dashed #cbd5e1;
+      min-height: 200px;
+      display: none;
+    }
+
+    #preview.show {
+      display: block;
+    }
+
+    .preview-header {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .preview-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
+
+    .code-box {
+      border: 1px solid #000;
+      background: white;
+      display: inline-block;
+      text-align: center;
+      margin: 0;
+      padding: 1px;
+      box-sizing: border-box;
+      width: 144px;
+      height: 65px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+    }
+
+    .code-box .text {
+      font-family: monospace;
+      font-size: 9px;
+      font-weight: bold;
+      margin: 1px 0 0 0;
+      padding: 0;
+      line-height: 1;
+      color: #000;
+      order: 1;
+    }
+
+    .code-box canvas {
+      display: block;
+      margin: 0;
+      width: 140px !important;
+      height: 45px !important;
+      order: 2;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .header {
+        padding: 20px 15px;
+      }
+      
+      .header h1 {
+        font-size: 2em;
+      }
+      
+      .form-section {
+        padding: 20px 15px;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      button {
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+      
+      .preview-grid {
+        flex-direction: row;
+        justify-content: center;
+      }
+      
+      .code-box {
+        width: 120px;
+        height: 55px;
+      }
+      
+      .code-box canvas {
+        width: 118px !important;
+        height: 38px !important;
+      }
+      
+      .code-box .text {
+        font-size: 8px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: 1.8em;
+      }
+      
+      .header p {
+        font-size: 1em;
+      }
+      
+      .form-section {
+        padding: 15px 10px;
+      }
+      
+      input {
+        padding: 12px 15px;
+        font-size: 14px;
+      }
+      
+      button {
+        padding: 10px 15px;
+        font-size: 13px;
+      }
+      
+      .code-box {
+        width: 100px;
+        height: 48px;
+      }
+      
+      .code-box canvas {
+        width: 98px !important;
+        height: 32px !important;
+      }
+      
+      .code-box .text {
+        font-size: 7px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Generador de Códigos</h1>
+      <p>Crea códigos de barras profesionales en segundos</p>
+    </div>
+    
+    <div class="form-section">
+      <div class="form-group">
+        <label for="codigo">🔢 Código de Barras:</label>
+        <input type="text" id="codigo" placeholder="Ej: 123456789012" maxlength="50">
+      </div>
+      
+      <div class="form-group">
+        <label for="cantidad">📦 Cantidad:</label>
+        <input type="number" id="cantidad" placeholder="Ej: 100" min="1" max="10000">
+      </div>
+      
+      <div class="button-group">
+        <button class="btn-preview" onclick="previsualizar()">👀 Previsualizar</button>
+        <button class="btn-download" onclick="generarPDF()">📥 Descargar PDF</button>
+      </div>
+      
+      <div class="loading" id="loading">Generando códigos de barras...</div>
+      
+      <div id="preview">
+        <div class="preview-header">Vista Previa (máximo 20 códigos mostrados)</div>
+        <div class="preview-grid" id="preview-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentCodes = [];
+
+    function validateInputs() {
+      const codigo = document.getElementById('codigo').value.trim();
+      const cantidad = parseInt(document.getElementById('cantidad').value);
+      
+      if (!codigo) {
+        alert("❌ Por favor ingresa un código válido");
+        return false;
+      }
+      
+      if (!cantidad || cantidad <= 0) {
+        alert("❌ Por favor ingresa una cantidad válida");
+        return false;
+      }
+      
+      if (cantidad > 10000) {
+        alert("❌ La cantidad máxima es 10,000 códigos");
+        return false;
+      }
+      
+      return { codigo, cantidad };
+    }
+
+    function showLoading(show) {
+      const loading = document.getElementById('loading');
+      loading.classList.toggle('show', show);
+    }
+
+    function previsualizar() {
+      const inputs = validateInputs();
+      if (!inputs) return;
+      
+      const { codigo, cantidad } = inputs;
+      const preview = document.getElementById('preview');
+      const previewGrid = document.getElementById('preview-grid');
+      
+      showLoading(true);
+      previewGrid.innerHTML = "";
+      currentCodes = [];
+
+      setTimeout(() => {
+        const maxPreview = Math.min(cantidad, 20);
+        
+        for (let i = 0; i < maxPreview; i++) {
+          const div = document.createElement("div");
+          div.className = "code-box";
+
+          // Agregar texto ARRIBA
+          const txt = document.createElement("div");
+          txt.className = "text";
+          txt.textContent = codigo;
+          div.appendChild(txt);
+
+          // Crear canvas para código de barras ABAJO del texto
+          const canvas = document.createElement("canvas");
+          canvas.width = 140;
+          canvas.height = 45;
+          
+          try {
+            JsBarcode(canvas, codigo, { 
+              format: "CODE128", 
+              width: 1.4,
+              height: 35,
+              displayValue: false,
+              margin: 1
+            });
+          } catch (error) {
+            alert("❌ Error al generar código de barras. Verifica que el código sea válido.");
+            showLoading(false);
+            return;
+          }
+          
+          div.appendChild(canvas);
+
+          previewGrid.appendChild(div);
+          currentCodes.push({ canvas: canvas.cloneNode(), text: codigo });
+        }
+        
+        preview.classList.add('show');
+        showLoading(false);
+        
+        if (cantidad > 20) {
+          const info = document.createElement('div');
+          info.style.textAlign = 'center';
+          info.style.marginTop = '15px';
+          info.style.color = '#64748b';
+          info.style.fontStyle = 'italic';
+          info.innerHTML = `📋 Mostrando 20 de ${cantidad} códigos. El PDF contendrá todos los ${cantidad} códigos.`;
+          previewGrid.parentNode.appendChild(info);
+        }
+      }, 100);
+    }
+
+    async function generarPDF() {
+      const inputs = validateInputs();
+      if (!inputs) return;
+      
+      const { codigo, cantidad } = inputs;
+      
+      showLoading(true);
+      
+      try {
+        // Pequeño delay para permitir que se muestre el loading
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ 
+          orientation: 'portrait', 
+          unit: 'mm', 
+          format: 'a4' 
+        });
+
+        // Configuración de layout - Calculamos para que quepan completos
+        const pageWidth = 210; // A4 width en mm
+        const pageHeight = 297; // A4 height en mm
+        const boxWidth = 36;
+        const boxHeight = 18; // Reducido para menos espacio
+        const marginLeft = 10;
+        const marginTop = 10;
+        const marginRight = 10;
+        const marginBottom = 10;
+        
+        // Calcular cuántos caben por fila y columna sin salirse
+        const availableWidth = pageWidth - marginLeft - marginRight;
+        const availableHeight = pageHeight - marginTop - marginBottom;
+        const perRow = Math.floor(availableWidth / boxWidth);
+        const perColumn = Math.floor(availableHeight / boxHeight);
+        const perPage = perRow * perColumn;
+
+        let currentX = marginLeft;
+        let currentY = marginTop;
+        let itemsOnCurrentPage = 0;
+
+        for (let i = 0; i < cantidad; i++) {
+          // Crear canvas temporal
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = 140;
+          tempCanvas.height = 45;
+          
+          JsBarcode(tempCanvas, codigo, { 
+            format: "CODE128", 
+            width: 1.4,
+            height: 30,
+            displayValue: false,
+            margin: 1
+          });
+
+          // Dibujar marco
+          pdf.setLineWidth(0.2);
+          pdf.rect(currentX, currentY, boxWidth, boxHeight);
+
+          // Agregar TEXTO ARRIBA (más pegado)
+          pdf.setFontSize(7);
+          pdf.setFont(undefined, 'bold');
+          pdf.text(codigo, currentX + boxWidth / 2, currentY + 4, { align: 'center' });
+
+          // Agregar código de barras ABAJO del texto (más pegado)
+          const imgData = tempCanvas.toDataURL("image/png");
+          pdf.addImage(imgData, 'PNG', currentX + 1, currentY + 5.5, boxWidth - 2, 11);
+
+          // Avanzar posición
+          currentX += boxWidth;
+          itemsOnCurrentPage++;
+          
+          if (itemsOnCurrentPage % perRow === 0) {
+            currentX = marginLeft;
+            currentY += boxHeight;
+          }
+          
+          // Nueva página cuando se llena
+          if (itemsOnCurrentPage >= perPage && i + 1 < cantidad) {
+            pdf.addPage();
+            currentX = marginLeft;
+            currentY = marginTop;
+            itemsOnCurrentPage = 0;
+          }
+        }
+
+        // Generar nombre único para el archivo
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+        const fileName = `codigos_${codigo}_${cantidad}_${timestamp}.pdf`;
+        
+        pdf.save(fileName);
+        
+        showLoading(false);
+        
+      } catch (error) {
+        showLoading(false);
+        console.error('Error:', error);
+        alert("❌ Error al generar el PDF. Por favor intenta nuevamente.");
+      }
+    }
+
+    // Permitir generar con Enter
+    document.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        previsualizar();
+      }
+    });
+  </script>
+</body>
+</html>
